@@ -3,13 +3,17 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 数据库工具类
+ * @author hzf
+ *
+ */
 public class SQLiteUtil {
 
 	public static void main(String[] args) {
 		try {
 			createTableMsg();
 		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -36,7 +40,8 @@ public class SQLiteUtil {
 	      		+ "(id integer primary key , "
 	      		+ "path string, "
 	      		+ "time long, "
-	      		+ "type integer)");
+	      		+ "type integer, "
+	      		+ "catagory integer)");
 	    }  
 	    catch(SQLException e)  
 	    {  
@@ -71,15 +76,14 @@ public class SQLiteUtil {
 	    try  
 	    {  
 	      // create a database connection  
-	      connection = DriverManager.getConnection("jdbc:sqlite:hitwearable.db");  
-	      Statement statement = connection.createStatement();  
-	      statement.setQueryTimeout(30);  // set timeout to 30 sec.  
+	      connection = DriverManager.getConnection("jdbc:sqlite:hitwearable.db");
 	  
-	      PreparedStatement prep = connection.prepareStatement("insert into msg values(?, ?, ?, ?);");
+	      PreparedStatement prep = connection.prepareStatement("insert into msg values(?, ?, ?, ?, ?);");
 	      prep.setObject(1, null);
 	      prep.setString(2, msg.getPath());
 	      prep.setLong(3, msg.getTime());
 	      prep.setInt(4, msg.getType());
+	      prep.setInt(5, msg.getCatagory());
 	      prep.addBatch();
 	      connection.setAutoCommit(false);  
           prep.executeBatch();  
@@ -126,7 +130,7 @@ public class SQLiteUtil {
 	      List<Msg> list = new ArrayList<Msg>();
 	      while(rs.next())  
 	      {  
-	        Msg msg = new Msg(rs.getString("path"), rs.getInt("type"), rs.getLong("time"));
+	        Msg msg = new Msg(rs.getString("path"), rs.getInt("type"), rs.getLong("time"), rs.getInt("catagory"));
 	        list.add(msg); 
 	      }
 	      return list;

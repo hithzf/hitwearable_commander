@@ -33,12 +33,12 @@ public class MyJButton extends JButton {
 	/* 灰白 */
 	public static Color ashen1 = new Color(250, 250, 250);
 	public static Color ashen2 = new Color(197, 197, 197);
-	/* 深宝石蓝 */
-	public static Color stone1 = new Color(79, 125, 184);
-	public static Color stone2 = new Color(89, 200, 240);
 	/* 淡天蓝色 */
 	public static Color sky1 = new Color(240, 240, 240);
 	public static Color sky2 = new Color(121, 230, 230);
+	/* 深宝石蓝 */
+	public static Color stone1 = new Color(79, 125, 184);
+	public static Color stone2 = new Color(89, 200, 240);
 	/* 光标进入按钮判断 */
 	private boolean hover;
 

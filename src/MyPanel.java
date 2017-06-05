@@ -1,5 +1,6 @@
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.BufferedReader;
@@ -11,10 +12,11 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.UUID;
 
+import javax.sound.sampled.AudioFileFormat;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
-import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -36,7 +38,11 @@ class MyPanel extends JPanel implements ActionListener
 	private static final String BLANKSOURCE = "    ";
 	private static final String BLANKCONTENT = "        ";
 
-	SocketUtil socketUtil = new SocketUtil();
+	SocketUtil socketUtil = new SocketUtil();//用于文件传输
+	
+	MediaUtil mediaUtil = new MediaUtil();//用于录制音频等操作
+	
+	static String filePath;//语音、图片文件夹
 	
 	int mTextLocalPort;//本地的文本接收的端口号
 	int mTextDestinationPort ;//目标端的文本接收的端口号
@@ -48,14 +54,14 @@ class MyPanel extends JPanel implements ActionListener
 
 	//定义各个控件
 	MyJButton b_settings = new MyJButton("设置", 0);
-	MyJButton connect = new MyJButton("连接", 0);
+	MyJButton b_connect = new MyJButton("连接", 0);
 	
 	static JTextPane messageHistory = new JTextPane();//消息记录
 	JLabel l_name = new JLabel("单兵：");
 	JTextField name = new JTextField(28);
 	JTextArea chatting = new JTextArea(5,42);//文本输入框
 	
-	MyJButton b_sendfile = new MyJButton("发送文件", 0);
+	MyJButton b_sendfile = new MyJButton("开始录制", 0);
 	MyJButton b_send = new MyJButton("发送条密", 0);
 	
 	JScrollPane scro_his = new JScrollPane(messageHistory);//设置带滑动条的信息显示区
@@ -68,10 +74,11 @@ class MyPanel extends JPanel implements ActionListener
 		//将各个控件加入到panal中
 		b_settings.setPreferredSize(new Dimension(70, 35));
 		add(b_settings);
-		connect.setPreferredSize(new Dimension(70, 35));
-		add(connect);
+		b_connect.setPreferredSize(new Dimension(70, 35));
+		add(b_connect);
 		
 		add(scro_his);
+		scro_his.setPreferredSize(new Dimension(465,450));
 		add(scro_chat);
 		
 		b_sendfile.setPreferredSize(new Dimension(80, 40));
@@ -83,17 +90,15 @@ class MyPanel extends JPanel implements ActionListener
 		//设置消息框和聊天框
 		chatting.setBorder(BorderFactory.createLineBorder(Color.gray,1));
 		messageHistory.setBorder(BorderFactory.createLineBorder(Color.gray,1));
-		messageHistory.setPreferredSize(new Dimension(465,450));
+//		messageHistory.setPreferredSize(new Dimension(465,450));
 		messageHistory.setVisible(true);
 		messageHistory.setEditable(false);
-//		messageHistory.setContentType("text/html");
-//		messageHistory.setText("<html><body><a href=http://www.baidu.com>baidu</a></body></html>");
 		chatting.setVisible(true);
 		chatting.setEditable(true);
 		//监听器
 		b_settings.addActionListener(this);
 		b_send.addActionListener(this);
-		connect.addActionListener(this);
+		b_connect.addActionListener(this);
 		b_sendfile.addActionListener(this);
 		
 		//初始化聊天记录
@@ -101,23 +106,62 @@ class MyPanel extends JPanel implements ActionListener
 			List<Msg> list = SQLiteUtil.queryAll();
 			for (final Msg msg : list) {
 				String item_source;
-				if(msg.getType() == Msg.TYPE_RECEIVED)
+				if(msg.getType() == Msg.TYPE_RECEIVED){
 					item_source = "    单兵    " + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(msg.getTime());
-				else
+					insertDocument(item_source + "\n" + BLANKCONTENT, Color.BLUE);
+				}
+				else{
 					item_source = "    指挥中心    " + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(msg.getTime());
-				insertDocument(item_source + "\n" + BLANKCONTENT, Color.BLUE);
-				MyJButton b_play = new MyJButton("语音消息", 0, 12);
-				b_play.addActionListener(new ActionListener() {
+					insertDocument(item_source + "\n" + BLANKCONTENT, Color.ORANGE);
+				}
+				switch (msg.getCatagory()) {
+				case Msg.CATAGORY_VOICE:
+					MyJButton b_play = new MyJButton("语音消息", 0, 12);
+					b_play.addActionListener(new ActionListener() {
+
+						@Override
+						public void actionPerformed(ActionEvent e) {
+							// TODO 实现语音播放
+							System.out.println(msg.getPath());
+							if(msg.getType() == Msg.TYPE_RECEIVED){
+								MediaUtil.openAMR(msg.getPath());
+							}else{
+								MediaUtil.playAudio(msg.getPath());
+							}
+						}
+					});
+					messageHistory.setCaretPosition(messageHistory.getDocument().getLength());
+					messageHistory.insertComponent(b_play);
+					break;
+				case Msg.CATAGORY_TEXT:
+					insertDocument(msg.getPath(), Color.BLACK);
+					break;
+				case Msg.CATAGORY_IMAGE:
+					//插入图片
+					ImageIcon imageIcon = new ImageIcon(msg.getPath());    // Icon由图片文件形成
+					Image image = imageIcon.getImage();                         // 但这个图片太大不适合做Icon
+					Image smallImage = image.getScaledInstance(250,300,Image.SCALE_FAST);
+					ImageIcon smallIcon = new ImageIcon(smallImage);
 					
-					@Override
-					public void actionPerformed(ActionEvent e) {
-						// TODO 实现语音播放
-						System.out.println(msg.getPath());
-						MediaUtil.playAudio(msg.getPath());
-					}
-				});
-				messageHistory.setCaretPosition(messageHistory.getDocument().getLength());
-				messageHistory.insertComponent(b_play);
+					messageHistory.setCaretPosition(messageHistory.getDocument().getLength());
+					messageHistory.insertIcon(smallIcon);
+					break;
+				case Msg.CATAGORY_VIDEO:
+					MyJButton b_open = new MyJButton("视频消息", 0, 12);
+					b_open.addActionListener(new ActionListener() {
+
+						@Override
+						public void actionPerformed(ActionEvent e) {
+							System.out.println(msg.getPath());
+							MediaUtil.openVideo(msg.getPath());
+						}
+					});
+					messageHistory.setCaretPosition(messageHistory.getDocument().getLength());
+					messageHistory.insertComponent(b_open);
+					break;
+				default:
+					break;
+				}
 				insertDocument("\n", Color.BLACK);
 			}
 		} catch (ClassNotFoundException e1) {
@@ -137,48 +181,85 @@ class MyPanel extends JPanel implements ActionListener
 		catch(IOException e){
 			e.printStackTrace();
 		}
-		//指定音频存放位置
-		File directory = new File("."); 
-		String filePath = null;
+		//指定音频文件夹/图片文件夹
+		File directory = new File(".");
 		try {
 			filePath = directory.getCanonicalPath() + "\\voice";
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		//插入图片
-//		ImageIcon imageIcon = new ImageIcon(filePath + "\\Chrysanthemum.jpg");
-//		messageHistory.insertIcon(imageIcon);
-		//打开文件接收线程
-//		socketUtil.receiveFileBySocket(mDestinationIP, mFileDestinationPort, filePath);
+		//打开文件接收线程/文本接受线程
+		socketUtil.receiveFileBySocket(mDestinationIP, mFileDestinationPort, filePath);
+		socketUtil.receiveTextByDatagram(mTextLocalPort);
 	}
 	
 	/**
-	 * 新增一条消息
+	 * 聊天记录框中新增一条消息
 	 * @param msg
 	 */
 	public static void updateMessageHistory(final Msg msg){
 		String item_source;
-		if(msg.getType() == Msg.TYPE_RECEIVED)
+		if(msg.getType() == Msg.TYPE_RECEIVED){
 			item_source = "    单兵    " + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(msg.getTime());
-		else
+			insertDocument(item_source + "\n" + BLANKCONTENT, Color.BLUE);
+		}
+		else{
 			item_source = "    指挥中心    " + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(msg.getTime());
-		insertDocument(item_source + "\n" + BLANKCONTENT, Color.BLUE);
-		MyJButton b_play = new MyJButton("语音消息", 0, 12);
-		b_play.addActionListener(new ActionListener() {
+			insertDocument(item_source + "\n" + BLANKCONTENT, Color.ORANGE);
+		}
+		switch (msg.getCatagory()) {
+		case Msg.CATAGORY_VOICE:
+			MyJButton b_play = new MyJButton("语音消息", 0, 12);
+			b_play.addActionListener(new ActionListener() {
+
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					// TODO 实现语音播放
+					System.out.println(msg.getPath());
+					if(msg.getType() == Msg.TYPE_RECEIVED){
+						MediaUtil.openAMR(msg.getPath());
+					}else{
+						MediaUtil.playAudio(msg.getPath());
+					}
+				}
+			});
+			messageHistory.setCaretPosition(messageHistory.getDocument().getLength());
+			messageHistory.insertComponent(b_play);
+			break;
+		case Msg.CATAGORY_TEXT:
+			insertDocument(msg.getPath(), Color.BLACK);
+			break;
+		case Msg.CATAGORY_IMAGE:
+			//插入图片
+			ImageIcon imageIcon = new ImageIcon(msg.getPath());    // Icon由图片文件形成
+			Image image = imageIcon.getImage();                         // 但这个图片太大不适合做Icon
+			Image smallImage = image.getScaledInstance(250,300,Image.SCALE_FAST);
+			ImageIcon smallIcon = new ImageIcon(smallImage);
 			
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				// TODO 实现语音播放
-				System.out.println(msg.getPath());
-				MediaUtil.playAudio(msg.getPath());
-			}
-		});
-		messageHistory.setCaretPosition(messageHistory.getDocument().getLength());
-		messageHistory.insertComponent(b_play);
+			messageHistory.setCaretPosition(messageHistory.getDocument().getLength());
+			messageHistory.insertIcon(smallIcon);
+			break;
+		case Msg.CATAGORY_VIDEO:
+			MyJButton b_open = new MyJButton("视频消息", 0, 12);
+			b_open.addActionListener(new ActionListener() {
+
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					System.out.println(msg.getPath());
+					MediaUtil.openVideo(msg.getPath());
+				}
+			});
+			messageHistory.setCaretPosition(messageHistory.getDocument().getLength());
+			messageHistory.insertComponent(b_open);
+			break;
+		default:
+			break;
+		}
 		insertDocument("\n", Color.BLACK);
 	}
 	
-	public static void insertDocument(String text, Color textColor)// 根据传入的颜色及文字，将文字插入文本域
+	// 根据传入的颜色及文字，将文字插入文本域
+	public static void insertDocument(String text, Color textColor)
 	{
 		SimpleAttributeSet set = new SimpleAttributeSet();
 		StyleConstants.setForeground(set, textColor);// 设置文字颜色
@@ -188,77 +269,40 @@ class MyPanel extends JPanel implements ActionListener
 		try {
 			doc.insertString(doc.getLength(), text, set);// 插入文字
 		} catch (BadLocationException e) {
+			e.printStackTrace();
 		}
 	}
 
 	public void actionPerformed(ActionEvent e) 
 	{
-
 		//监听器：设置
 		if(e.getSource() == b_settings)
 		{
 			MyDialog dialog = new MyDialog();
 		}
-		//监听器：发送文件
+		//监听器：开始录制
 		if(e.getSource() == b_sendfile)
 		{
-			final JFileChooser fc = new JFileChooser();
-			if(JFileChooser.APPROVE_OPTION == fc.showOpenDialog(this))
-			{
-				socketUtil.sendFileBySocket(mFileLocalPort, fc.getSelectedFile().getPath());
+			if(b_sendfile.getText().equals("开始录制")){
+				mediaUtil.startRecord();
+				b_sendfile.setText("结束录制");
+			}else if(b_sendfile.getText().equals("结束录制")){
+				mediaUtil.stopRecord();
+				b_sendfile.setText("发送语音");
+			}else{
+				String savePath = new StringBuilder(filePath).append("\\").append(UUID.randomUUID()).append(".wav").toString();
+				mediaUtil.saveToFile(savePath, AudioFileFormat.Type.WAVE);
+				socketUtil.sendFileBySocket(mFileLocalPort, savePath);
+				b_sendfile.setText("开始录制");
 			}
-		}
-		//监听器：接收文件
-//		if(e.getSource()== receivefile)
-//		{
-//			final JFileChooser fc = new JFileChooser();
-//			fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-//			if(JFileChooser.APPROVE_OPTION == fc.showSaveDialog(this))
-//			{				
-//				System.out.println(fc.getSelectedFile().getPath());
-//				socketUtil.receiveFileBySocket(mDestinationIP, mFileDestinationPort, fc.getSelectedFile().getPath());
-//			}
-//		}
-		//监听器：连接功能
-		if(e.getSource()==connect)
-		{
-			new Thread() 
-			{
-				public void run() 
-				{
-					while(true)
-					{
-						try
-						{
-							DatagramSocket ds = new DatagramSocket(mTextLocalPort);
-							byte[] buf = new byte[1024];
-							DatagramPacket dp = new DatagramPacket(buf,buf.length);
-							ds.receive(dp);
-							String messageget = "<单兵>"+new String(dp.getData(),0,dp.getLength()) + " from " + dp.getAddress() + ":" + dp.getPort();
-							insertDocument(messageget+"\n", Color.BLACK);
-							System.out.println(messageget);
-							ds.close();
-						}
-						catch(IOException ee)
-						{
-							
-						}
-					}
-				}
-			}.start();
 		}
 		//监听器：发送文本
 		if(e.getSource() == b_send)
 		{
 			try
 			{
-				String messagesent = chatting.getText();
-				DatagramSocket ds = new DatagramSocket();
-				DatagramPacket dp = new DatagramPacket(messagesent.getBytes(),messagesent.getBytes().length,
-																								InetAddress.getByName(mDestinationIP),mTextDestinationPort);
-				ds.send(dp);
-				ds.close();
-				insertDocument("<指挥中心>"+chatting.getText()+" from " + dp.getAddress() + ":" + dp.getPort()+"\n", Color.BLACK);
+				String messageSend = chatting.getText();
+				socketUtil.sendTextByDatagram(messageSend, mDestinationIP, mTextDestinationPort);
 				chatting.setText("");
 			}
 			catch(Exception se)

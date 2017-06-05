@@ -8,14 +8,20 @@
 public class Msg {
     public static final int TYPE_RECEIVED = 0;
     public static final int TYPE_SENT = 1;
+    
+    public static final int CATAGORY_VOICE = 0;
+    public static final int CATAGORY_TEXT = 1;
+    public static final int CATAGORY_IMAGE = 2;
+    public static final int CATAGORY_VIDEO = 3;
 
     private  int id;
     private String path;
     private long time;
-    private int type;
+    private int type;//接收or发送
+    private int catagory;//语音or文字or图片or视频
 
     /**
-     * 
+     * 构造函数
      * @param path
      * @param type
      * @param time
@@ -24,6 +30,21 @@ public class Msg {
         this.path = path;
         this.type = type;
         this.time = time;
+        this.catagory = CATAGORY_VOICE;
+    }
+    
+    /**
+     * 构造函数
+     * @param path
+     * @param type
+     * @param time
+     * @param catagory
+     */
+    public Msg(String path, int type, long time, int catagory){
+        this.path = path;
+        this.type = type;
+        this.time = time;
+        this.catagory = catagory;
     }
 
     public int getId(){
@@ -37,5 +58,8 @@ public class Msg {
     }
     public String getPath(){
         return this.path;
+    }
+    public int getCatagory(){
+    	return this.catagory;
     }
 }
