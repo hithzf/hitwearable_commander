@@ -167,20 +167,7 @@ class MyPanel extends JPanel implements ActionListener
 		} catch (ClassNotFoundException e1) {
 			e1.printStackTrace();
 		}
-		//将Information.txt文件中的端口以及IP地址信息读到各个变量中
-		try
-		{
-			BufferedReader in = new BufferedReader(new FileReader("Informatin.txt")); 
-			mTextLocalPort = Integer.parseInt(in.readLine());
-			mTextDestinationPort = Integer.parseInt(in.readLine());
-			mDestinationIP = in.readLine();
-			mFileLocalPort = Integer.parseInt(in.readLine());
-			mFileDestinationPort = Integer.parseInt(in.readLine());
-			in.close(); 
-		}
-		catch(IOException e){
-			e.printStackTrace();
-		}
+		
 		//指定音频文件夹/图片文件夹
 		File directory = new File(".");
 		try {
@@ -188,9 +175,6 @@ class MyPanel extends JPanel implements ActionListener
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		//打开文件接收线程/文本接受线程
-		socketUtil.receiveFileBySocket(mDestinationIP, mFileDestinationPort, filePath);
-		socketUtil.receiveTextByDatagram(mTextLocalPort);
 	}
 	
 	/**
@@ -279,6 +263,26 @@ class MyPanel extends JPanel implements ActionListener
 		if(e.getSource() == b_settings)
 		{
 			MyDialog dialog = new MyDialog();
+		}
+		//连接
+		if(e.getSource() == b_connect){
+			//将Information.txt文件中的端口以及IP地址信息读到各个变量中
+			try
+			{
+				BufferedReader in = new BufferedReader(new FileReader("Informatin.txt")); 
+				mTextLocalPort = Integer.parseInt(in.readLine());
+				mTextDestinationPort = Integer.parseInt(in.readLine());
+				mDestinationIP = in.readLine();
+				mFileLocalPort = Integer.parseInt(in.readLine());
+				mFileDestinationPort = Integer.parseInt(in.readLine());
+				in.close(); 
+			}
+			catch(IOException ioe){
+				ioe.printStackTrace();
+			}
+			//打开文件接收线程/文本接受线程
+			socketUtil.receiveFileBySocket(mDestinationIP, mFileDestinationPort, filePath);
+			socketUtil.receiveTextByDatagram(mTextLocalPort);
 		}
 		//监听器：开始录制
 		if(e.getSource() == b_sendfile)
