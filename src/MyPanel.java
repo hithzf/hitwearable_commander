@@ -172,6 +172,10 @@ class MyPanel extends JPanel implements ActionListener
 		File directory = new File(".");
 		try {
 			filePath = directory.getCanonicalPath() + "\\voice";
+			File voiceDir = new File(filePath);
+			if(!voiceDir.exists()){
+				voiceDir.mkdirs();
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
