@@ -66,6 +66,10 @@ public class SocketUtil {
 				        	break;
 				        case "mp4":
 				        	catagory = Msg.CATAGORY_VIDEO;
+				        	break;
+				        case "avi":
+				        	catagory = Msg.CATAGORY_VIDEO;
+				        	break;
 				        default:
 				        	break;
 				        }

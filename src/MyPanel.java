@@ -309,8 +309,10 @@ class MyPanel extends JPanel implements ActionListener
 		{
 			try
 			{
-				String messageSend = chatting.getText();
-				socketUtil.sendTextByDatagram(messageSend, mDestinationIP, mTextDestinationPort);
+				String messageSend = chatting.getText().trim();
+				if(messageSend.length() != 0){
+					socketUtil.sendTextByDatagram(messageSend, mDestinationIP, mTextDestinationPort);
+				}
 				chatting.setText("");
 			}
 			catch(Exception se)

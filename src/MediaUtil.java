@@ -73,7 +73,7 @@ public class MediaUtil implements ControlContext {
         Runtime rn = Runtime.getRuntime();  
         Process p = null;  
         try {  
-            p = rn.exec("C:/Program Files (x86)/Windows Media Player/wmplayer.exe "+file);  
+            p = rn.exec("D:/Program Files (x86)/Thunder Network/XMP/V5.2.10.5496/Bin/XMP.exe "+file);  
         } catch (Exception e) {  
             System.out.println("Error exec!");
         }  
@@ -241,7 +241,7 @@ public class MediaUtil implements ControlContext {
 			createAudioInputStream(file);
 		}
 
-		// reset to the beginnning of the captured data
+		// reset to the beginning of the captured data
 		try {
 			audioInputStream.reset();
 		} catch (Exception e) {
